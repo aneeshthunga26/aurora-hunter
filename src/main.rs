@@ -1,5 +1,7 @@
 mod weather;
 mod config;
+mod store;
+mod types;
 
 use anyhow::Context as _;
 use serenity::all::{GuildId, Interaction};
