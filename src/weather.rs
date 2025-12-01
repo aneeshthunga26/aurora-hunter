@@ -27,16 +27,16 @@ pub struct AuroraProbabilityResponse {
     pub message: Vec<String>,
 }
 
-/// Get Weather forecast for a given Location
-pub async fn get_forecast(
-    place: Coordinates,
+/// Get Aurora prediction for a given Location
+pub async fn get_aurora_prediction(
+    coordinates: Coordinates,
     client: &Client,
 ) -> Result<AuroraProbability, Box<dyn std::error::Error>> {
     let config = Config::get_config();
     let store = Store::get_store();
 
-    // Check if there exists an entry in the store for the requested place
-    let forecast = store.get_probability_data_by_coordinates(place)?;
+    // Check if there exists an entry in the store for the requested coordinates
+    let forecast = store.get_probability_data_by_coordinates(coordinates)?;
     if let Some(forecast) = forecast {
         // Check if it was updated less than 10 mins ago
         if Utc::now() - forecast.date > TimeDelta::minutes(10) {
@@ -49,7 +49,7 @@ pub async fn get_forecast(
 
     let url = format!(
         "{auroras_url}?type=ace&data=probability&lat={}&long={}",
-        place.lat, place.long
+        coordinates.lat, coordinates.long
     );
     let request = client.get(url).build()?;
 

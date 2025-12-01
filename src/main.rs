@@ -86,7 +86,7 @@ impl EventHandler for Bot {
                         long: longitude as i16,
                     };
 
-                    let result = weather::get_forecast(coordinates, &self.client).await;
+                    let result = weather::get_aurora_prediction(coordinates, &self.client).await;
 
                     match result {
                         Ok(probability) => {
