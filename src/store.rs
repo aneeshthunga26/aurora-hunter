@@ -103,7 +103,7 @@ mod tests {
         let data = AuroraProbability {
             coordinates: Coordinates { lat: 80, long: 90 },
             colour: Colour::Green,
-            value: 0.0,
+            value: 0,
             date: Utc::now(),
             location_name: None,
         };
@@ -118,7 +118,7 @@ mod tests {
         let data = AuroraProbability {
             coordinates: Coordinates { lat: 80, long: 90 },
             colour: Colour::Green,
-            value: 0.0,
+            value: 0,
             date: Utc::now(),
             location_name: None,
         };
@@ -134,7 +134,7 @@ mod tests {
         let data = AuroraProbability {
             coordinates: Coordinates { lat: 80, long: 90 },
             colour: Colour::Green,
-            value: 0.0,
+            value: 0,
             date: Utc::now(),
             location_name: None,
         };
@@ -151,14 +151,14 @@ mod tests {
         let data1 = AuroraProbability {
             coordinates: Coordinates { lat: 80, long: 90 },
             colour: Colour::Green,
-            value: 0.0,
+            value: 0,
             date: Utc::now(),
             location_name: None,
         };
         let data2 = AuroraProbability {
             coordinates: Coordinates { lat: 82, long: 100 },
             colour: Colour::Green,
-            value: 0.0,
+            value: 0,
             date: Utc::now(),
             location_name: None,
         };
@@ -175,14 +175,14 @@ mod tests {
         let data1 = AuroraProbability {
             coordinates: Coordinates { lat: 80, long: 90 },
             colour: Colour::Green,
-            value: 0.0,
+            value: 0,
             date: Utc::now(),
             location_name: None,
         };
         let data2 = AuroraProbability {
             coordinates: Coordinates { lat: 82, long: 100 },
             colour: Colour::Green,
-            value: 0.0,
+            value: 0,
             date: Utc::now(),
             location_name: None,
         };

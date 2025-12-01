@@ -1,7 +1,7 @@
-mod weather;
 mod config;
 mod store;
 mod types;
+mod weather;
 
 use anyhow::Context as _;
 use serenity::all::{GuildId, Interaction};
@@ -14,8 +14,9 @@ use serenity::prelude::*;
 use shuttle_runtime::SecretStore;
 use tracing::info;
 
+use crate::types::Coordinates;
+
 struct Bot {
-    weather_api_key: String,
     client: reqwest::Client,
     discord_guild_id: GuildId,
 }
@@ -27,13 +28,21 @@ impl EventHandler for Bot {
 
         let commands = vec![
             CreateCommand::new("hello").description("Say hello"),
-            CreateCommand::new("weather")
-                .description("Display the weather")
+            CreateCommand::new("aurora-prediction")
+                .description("Display the aurora prediction information")
                 .add_option(
                     CreateCommandOption::new(
-                        serenity::all::CommandOptionType::String,
-                        "place",
-                        "City to lookup forecast",
+                        serenity::all::CommandOptionType::Integer,
+                        "latitude",
+                        "Latitude rounded to closest integer to lookup",
+                    )
+                    .required(true),
+                )
+                .add_option(
+                    CreateCommandOption::new(
+                        serenity::all::CommandOptionType::Integer,
+                        "longitude",
+                        "Longitude rounded to closest integer to lookup",
                     )
                     .required(true),
                 ),
@@ -52,23 +61,39 @@ impl EventHandler for Bot {
         if let Interaction::Command(command) = interaction {
             let response_content = match command.data.name.as_str() {
                 "hello" => "hello".to_owned(),
-                "weather" => {
-                    let argument = command
+                "aurora-prediction" => {
+                    let argument1 = command
                         .data
                         .options
                         .iter()
-                        .find(|opt| opt.name == "place")
+                        .find(|opt| opt.name == "latitude")
                         .cloned();
 
-                    let value = argument.unwrap().value;
-                    let place = value.as_str().unwrap();
+                    let argument2 = command
+                        .data
+                        .options
+                        .iter()
+                        .find(|opt| opt.name == "longitude")
+                        .cloned();
 
-                    let result =
-                        weather::get_forecast(place, &self.weather_api_key, &self.client).await;
+                    let value1 = argument1.unwrap().value;
+                    let value2 = argument2.unwrap().value;
+                    let latitude = value1.as_i64().unwrap();
+                    let longitude = value2.as_i64().unwrap();
+
+                    let coordinates = Coordinates {
+                        lat: latitude as i8,
+                        long: longitude as i16,
+                    };
+
+                    let result = weather::get_forecast(coordinates, &self.client).await;
 
                     match result {
-                        Ok((location, forecast)) => {
-                            format!("Forecast: {} in {}", forecast.headline.overview, location)
+                        Ok(probability) => {
+                            format!(
+                                "There is a {}% chance to see an aurora at ({},{})",
+                                probability.value, coordinates.lat, coordinates.long
+                            )
                         }
                         Err(err) => {
                             format!("Err: {err}")
@@ -97,35 +122,21 @@ async fn serenity(
         .get("DISCORD_TOKEN")
         .context("'DISCORD_TOKEN' was not found")?;
 
-    let weather_api_key = secret_store
-        .get("WEATHER_API_KEY")
-        .context("'WEATHER_API_KEY' was not found")?;
-
     let discord_guild_id = secret_store
         .get("DISCORD_GUILD_ID")
         .context("'DISCORD_GUILD_ID' was not found")?;
 
-    let client = get_client(
-        &discord_token,
-        &weather_api_key,
-        discord_guild_id.parse().unwrap(),
-    )
-    .await;
+    let client = get_client(&discord_token, discord_guild_id.parse().unwrap()).await;
     Ok(client.into())
 }
 
-pub async fn get_client(
-    discord_token: &str,
-    weather_api_key: &str,
-    discord_guild_id: u64,
-) -> Client {
+pub async fn get_client(discord_token: &str, discord_guild_id: u64) -> Client {
     // Set gateway intents, which decides what events the bot will be notified about.
     // Here we don't need any intents so empty
     let intents = GatewayIntents::empty();
 
     Client::builder(discord_token, intents)
         .event_handler(Bot {
-            weather_api_key: weather_api_key.to_owned(),
             client: reqwest::Client::new(),
             discord_guild_id: GuildId::new(discord_guild_id),
         })
