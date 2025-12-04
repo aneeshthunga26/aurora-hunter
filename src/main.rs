@@ -14,7 +14,49 @@ use serenity::prelude::*;
 use shuttle_runtime::SecretStore;
 use tracing::info;
 
-use crate::types::Coordinates;
+use crate::store::Store;
+use crate::types::{Coordinates, Location};
+
+async fn handle_predict_by_location(
+    city_option: Option<serenity::all::CommandDataOption>,
+    client: &reqwest::Client,
+) -> String {
+    let argument = city_option;
+    let Some(argument) = argument else {
+        return "Please enter a city name".to_owned();
+    };
+
+    let value = argument.value.as_str();
+    let Some(value) = value else {
+        return "Please enter a value".to_owned();
+    };
+
+    let lowercase_value = value.to_lowercase();
+    let store = Store::get_store().await;
+    let coordinates = store
+        .get_coordinates_by_location(&Location::from(lowercase_value.as_str()))
+        .await;
+
+    let Some(coordinates) = coordinates else {
+        return format!(
+            "We currently do not have {value} in our database, you can try using the command with coordinates instead."
+        );
+    };
+
+    let result = weather::get_aurora_prediction(coordinates, client).await;
+
+    match result {
+        Ok(probability) => {
+            format!(
+                "There is a {}% chance to see an aurora in {value}",
+                probability.value
+            )
+        }
+        Err(err) => {
+            format!("Err: {err}")
+        }
+    }
+}
 
 struct Bot {
     client: reqwest::Client,
@@ -28,7 +70,7 @@ impl EventHandler for Bot {
 
         let commands = vec![
             CreateCommand::new("hello").description("Say hello"),
-            CreateCommand::new("aurora-prediction")
+            CreateCommand::new("predict-by-coordinates")
                 .description("Display the aurora prediction information")
                 .add_option(
                     CreateCommandOption::new(
@@ -43,6 +85,16 @@ impl EventHandler for Bot {
                         serenity::all::CommandOptionType::Integer,
                         "longitude",
                         "Longitude rounded to closest integer to lookup",
+                    )
+                    .required(true),
+                ),
+            CreateCommand::new("predict-by-location")
+                .description("Display the aurora prediction information")
+                .add_option(
+                    CreateCommandOption::new(
+                        serenity::all::CommandOptionType::String,
+                        "city",
+                        "City to lookup Aurora information for",
                     )
                     .required(true),
                 ),
@@ -61,7 +113,7 @@ impl EventHandler for Bot {
         if let Interaction::Command(command) = interaction {
             let response_content = match command.data.name.as_str() {
                 "hello" => "hello".to_owned(),
-                "aurora-prediction" => {
+                "predict-by-coordinates" => {
                     let argument1 = command
                         .data
                         .options
@@ -99,6 +151,16 @@ impl EventHandler for Bot {
                             format!("Err: {err}")
                         }
                     }
+                }
+                "predict-by-location" => {
+                    let city_option = command
+                        .data
+                        .options
+                        .iter()
+                        .find(|opt| opt.name == "city")
+                        .cloned();
+
+                    handle_predict_by_location(city_option, &self.client).await
                 }
                 command => unreachable!("Unknown command: {}", command),
             };

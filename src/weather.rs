@@ -33,10 +33,10 @@ pub async fn get_aurora_prediction(
     client: &Client,
 ) -> Result<AuroraProbability, Box<dyn std::error::Error>> {
     let config = Config::get_config();
-    let store = Store::get_store();
+    let store = Store::get_store().await;
 
     // Check if there exists an entry in the store for the requested coordinates
-    let forecast = store.get_probability_data_by_coordinates(coordinates)?;
+    let forecast = store.get_probability_data_by_coordinates(coordinates).await;
     if let Some(forecast) = forecast {
         // Check if it was updated less than 10 mins ago
         if Utc::now() - forecast.date > TimeDelta::minutes(10) {
@@ -62,7 +62,7 @@ pub async fn get_aurora_prediction(
     let aurora_probability = AuroraProbability::from(resp)?;
 
     // Store the response in cache
-    store.add_probability_data(aurora_probability.clone())?;
+    store.add_probability_data(aurora_probability.clone()).await;
 
     Ok(aurora_probability)
 }

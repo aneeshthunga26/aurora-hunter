@@ -4,10 +4,21 @@ use chrono::{DateTime, Utc};
 use crate::weather::AuroraProbabilityResponse;
 
 /// Lat(titude) and Long(itude)
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone, Copy)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd, Clone, Copy, Hash)]
 pub struct Coordinates {
     pub lat: i8,
     pub long: i16,
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct Location {
+    pub city: String,
+}
+
+impl Location {
+    pub fn from(string: &str) -> Self {
+        Self { city: string.to_string() }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,7 +37,7 @@ pub struct AuroraProbability {
     pub value: u32,
     pub colour: Colour,
     pub date: DateTime<Utc>,
-    pub location_name: Option<String>,
+    pub location: Option<Location>,
 }
 
 impl AuroraProbability {
@@ -53,7 +64,7 @@ impl AuroraProbability {
             date,
             colour,
             value: data.value,
-            location_name: None,
+            location: None,
         })
     }
 }
